@@ -4,11 +4,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 class AppState extends ChangeNotifier {
   static const String _strengthKey = 'strength_level';
   
-  int _currentStrength = 5;
+  int _currentStrength = 5; // 魅力レベル（1-10）
   bool _isLoading = false;
   String? _errorMessage;
 
-  int get currentStrength => _currentStrength;
+  int get currentStrength => _currentStrength; // 魅力レベルを取得
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 

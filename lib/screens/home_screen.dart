@@ -3,23 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_state.dart';
 import '../services/photo_picker_service.dart';
-import '../screens/camera_screen.dart';
 import '../screens/image_editor_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
-  Future<void> _openCamera(BuildContext context) async {
-    try {
-      Navigator.of(context).push(
-        MaterialPageRoute(builder: (context) => const CameraScreen()),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('カメラエラー: $e')),
-      );
-    }
-  }
 
   Future<void> _pickPhoto(BuildContext context) async {
     try {
@@ -57,7 +45,7 @@ class HomeScreen extends StatelessWidget {
             children: [
               // App Logo/Title
               const Icon(
-                Icons.photo_camera,
+                Icons.photo_library,
                 size: 80,
                 color: Colors.blue,
               ),
@@ -109,41 +97,20 @@ class HomeScreen extends StatelessWidget {
               
               const SizedBox(height: 40),
               
-              // Action Buttons
+              // Action Button
               SizedBox(
                 width: double.infinity,
                 height: 60,
                 child: ElevatedButton.icon(
-                  onPressed: () => _openCamera(context),
-                  icon: const Icon(Icons.camera_alt, size: 28),
+                  onPressed: () => _pickPhoto(context),
+                  icon: const Icon(Icons.photo_library, size: 28),
                   label: const Text(
-                    '写真を撮る',
+                    '写真を選んで加工する',
                     style: TextStyle(fontSize: 18),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blue,
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
-              ),
-              
-              const SizedBox(height: 16),
-              
-              SizedBox(
-                width: double.infinity,
-                height: 60,
-                child: OutlinedButton.icon(
-                  onPressed: () => _pickPhoto(context),
-                  icon: const Icon(Icons.photo_library, size: 28),
-                  label: const Text(
-                    '写真を選ぶ',
-                    style: TextStyle(fontSize: 18),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Colors.blue, width: 2),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),

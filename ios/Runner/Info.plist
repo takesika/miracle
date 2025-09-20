@@ -48,9 +48,6 @@
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	
-	<!-- Camera Permission -->
-	<key>NSCameraUsageDescription</key>
-	<string>撮影して加工するためにカメラを使用します。</string>
 	
 	<!-- Photo Library Permission -->
 	<key>NSPhotoLibraryAddUsageDescription</key>

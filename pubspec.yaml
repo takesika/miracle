@@ -15,8 +15,7 @@ dependencies:
   # UI
   cupertino_icons: ^1.0.2
   
-  # Camera and Image
-  camera: ^0.10.5+9
+  # Image
   image_picker: ^1.0.7
   image: ^4.1.7
   
@@ -31,9 +30,13 @@ dependencies:
   http: ^1.2.0
   dio: ^5.4.0
   
+  # OpenAI API
+  dart_openai: ^5.1.0
+  
   # Storage
   shared_preferences: ^2.2.2
   path_provider: ^2.1.2
+  path: ^1.8.3
   
   # EXIF
   exif: ^3.3.0
