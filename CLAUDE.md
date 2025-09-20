@@ -1,101 +1,196 @@
-# 奇跡の一枚 — 要件定義書（最終／Flutter・審査通過優先MVP）
+# CLAUDE.md
 
-## 1. 概要
-- **目的**：撮影または読み込んだ写真を、**生成AI**で自動補正し、**1〜10段階の「かっこよさ」**で強度調整してJPEG保存する。
-- **対象OS/端末**：iOS（iPhone）**iOS 16+**、Flutter製。
-- **価格**：完全無料（広告・課金なし）。
-- **データ方針**：個人情報を収集しない／画像はサーバ保存しない／**EXIFは全削除**。
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## 2. スコープ
-- **インプット**：アプリ内カメラ撮影／フォトライブラリから単枚選択。
-- **出力**：JPEG（入力解像度を基本維持、EXIF全削除）。
-- **AI処理**：クラウド推論（生成AI）で“かっこよさ”補正。
-- **UI**：ワンタップ基調＋**強度スライダー（1〜10）**。
-- **結果保存**：端末の写真ライブラリのみ（共有機能はMVP外）。
+# 奇跡の一枚 (Miracle Shot) - Flutter iOS App
 
-## 3. ユーザーストーリー
-1. アプリ起動 → 撮影 or 画像選択  
-2. プレビューに**初期強度＝5**で自動適用  
-3. スライダーで**1（原状維持）〜10（最大補正）**を調整  
-4. 保存ボタンでJPEG保存（EXIFなし）→ 完了トースト表示
+## Overview
+A Flutter iOS app that enhances photos using OpenAI's image generation API with adjustable "coolness" levels (1-10). The app prioritizes privacy by removing all EXIF data and not storing any user data.
 
-## 4. 機能要件
+## OpenAI API Configuration
 
-### 4.1 撮影・取り込み
-- カメラ：オート撮影のみ、フロント／リア切替。
-- ライブラリ：単枚インポート、HEIC/JPEG入力想定。
+This app requires an OpenAI API key to function. Set it up by:
 
-### 4.2 生成AI補正（かっこよさ）
-- **パラメータ**：`strength = 1..10`
-  - **1**：入力画像をそのまま（補正なし、EXIF削除のみ）
-  - **2–4**：軽微な補正（コントラスト、彩度、色温度）
-  - **5–7**：標準補正（明瞭化、スキントーン微調整、ノイズ低減）
-  - **8–10**：最大補正（青系トーン寄せ・立体感強調）
-- **出力一貫性**：自然さを損なわない範囲で補正。
+1. Create `.env` file from the example:
+   ```bash
+   cp .env.example .env
+   ```
+2. Add your OpenAI API key to the `.env` file:
+   ```
+   OPENAI_API_KEY=your_actual_api_key_here
+   ```
 
-### 4.3 保存
-- フォトライブラリへJPEG保存（アルバム「奇跡の一枚」を自動作成）。
-- **EXIF完全削除**（位置情報・日時・機種等すべて）。
+Alternatively, run with environment variable:
+```bash
+flutter run --dart-define=OPENAI_API_KEY=your_api_key_here
+```
 
-### 4.4 エラーハンドリング
-- ネットワーク不通：**リトライ導線**を提示。希望時は保存せず戻る。
-- 大容量入力：内部で一時縮小→AI処理→保存。
+## Essential Commands
 
-## 5. 非機能要件
-- **レイテンシ**：1枚あたり2〜4秒目標。
-- **画質**：自然さ優先、アーティファクト抑制。
-- **安定性**：クラッシュ率 < 1%。
-- **オフライン**：不可（クラウド依存）。
-- **セキュリティ**：TLS通信、サーバ保存なし。
+### Development
+```bash
+# Install dependencies
+flutter pub get
 
-## 6. API要件
-- **エンドポイント**：`POST /v1/enhance`
-- **入力**：JPEG/HEIC、`strength` (1–10)
-- **出力**：JPEG（EXIFなし）
-- **SLA目標**：P95 < 2.0s
-- **サーバ側**：処理後即削除／ログ保存なし
+# Run on iOS simulator
+flutter run
 
-## 7. プライバシー／審査配慮
-- 広告識別子・追跡不使用（ATT不要）。
-- 事前説明画面を実装：「画像は保存しません。EXIFは削除します。」
-- `Info.plist` 例  
-  - `NSCameraUsageDescription`：「撮影して加工するためにカメラを使用します。」  
-  - `NSPhotoLibraryAddUsageDescription`：「加工した写真を保存するためにフォトライブラリを使用します。」
-- ストア説明文：誇大表現を避け、シンプルに。
+# Run with specific device
+flutter run -d [device_id]
 
-## 8. 画面要件
-- **Home**：撮影／選択ボタン、強度初期値5表示
-- **Editor**：プレビュー、スライダー1〜10、保存ボタン
-- **完了トースト**：「保存しました」
+# Hot reload (while running)
+r
 
-## 9. 入出力形式
-- **入力**：HEIC/JPEG
-- **出力**：JPEG（品質95、EXIFなし）
-- **色空間**：sRGB固定
+# Hot restart (while running)
+R
+```
 
-## 10. 品質基準
-- 強度1：入力と視覚的に同一
-- 強度5：自然な明瞭化
-- 強度10：最大補正、破綻なし
-- 同条件で再現性一貫
+### Build & Release
+```bash
+# Build for iOS release
+flutter build ios --release
 
-## 11. テスト観点
-- 端末：iPhone 12–15, iOS16–18
-- 条件：逆光・夜景・ポートレート
-- 機内モード時の挙動
-- 保存画像のEXIFが空であること
+# Clean build artifacts
+flutter clean
 
-## 12. 運用・ログ
-- MVPでは分析・クラッシュ収集は実施しない
-- サーバは処理のみ、ログ保存なし
+# Update dependencies
+flutter pub upgrade
+```
 
-## 13. 制約・前提
-- クラウド依存で待ち時間あり
-- 高解像度入力は縮小する場合あり
-- 共有・バッチ処理は非対象
+### Code Quality
+```bash
+# Run static analysis
+flutter analyze
 
-## 14. 将来拡張
-- 共有先ショートカット
-- 複数枚一括処理
-- プリセット追加
-- オフライン簡易フィルタ
+# Format code
+dart format .
+
+# Run all tests
+flutter test
+
+# Run tests with coverage
+flutter test --coverage
+```
+
+## Architecture Overview
+
+### State Management
+- Uses **Provider** pattern with `AppState` class
+- Manages strength level (1-10), loading state, and error messages
+- Persists user preferences with SharedPreferences
+
+### Screen Flow
+1. **HomeScreen** (`home_screen.dart`) - Entry point with image selection
+2. **ImageEditorScreen** (`image_editor_screen.dart`) - Preview and strength adjustment
+3. **PrivacyExplanationScreen** - Privacy policy display
+
+### Service Layer
+Key services in `lib/services/`:
+- `ai_enhancement_service.dart` - OpenAI API integration, handles image enhancement with strength levels
+- `photo_picker_service.dart` - Gallery image selection using photo_manager
+- `photo_save_service.dart` - Saves enhanced images to "奇跡の一枚" album
+- `exif_service.dart` - Removes all EXIF metadata from images
+- `permission_service.dart` - iOS photo library permission handling
+- `error_handler.dart` - Centralized error handling with user-friendly messages
+
+### AI Enhancement Logic
+The strength parameter (1-10) maps to different enhancement levels:
+- **1**: No enhancement (original image, EXIF removed)
+- **2-4**: Light enhancement (subtle improvements)
+- **5-7**: Standard enhancement (balanced improvements)
+- **8-10**: Maximum enhancement (dramatic improvements)
+
+Implementation details in `ai_enhancement_service.dart`:
+- Uses OpenAI's Image Edit API
+- Compresses images to stay under 4MB limit
+- 30-second timeout for API calls
+- Different prompts for each strength level
+
+## iOS Configuration
+
+### Requirements
+- iOS 16.0+ (configured in `ios/Podfile`)
+- Xcode 14.0+
+- CocoaPods for dependency management
+
+### Permissions
+Set in `ios/Runner/Info.plist`:
+- `NSPhotoLibraryUsageDescription`: Photo library access
+- `NSPhotoLibraryAddUsageDescription`: Save enhanced photos
+
+### Running on iOS
+```bash
+# Install CocoaPods dependencies
+cd ios && pod install && cd ..
+
+# Run on simulator
+flutter run
+
+# Run on physical device (requires provisioning profile)
+flutter run -d [device_id]
+```
+
+## Testing
+
+### Running Tests
+```bash
+# Run all tests
+flutter test
+
+# Run specific test file
+flutter test test/widget_test.dart
+
+# Run in watch mode
+flutter test --watch
+```
+
+### Test Files
+- `test/widget_test.dart` - UI component tests
+- `test/providers/app_state_test.dart` - State management tests
+- `test/services/exif_service_test.dart` - EXIF removal tests
+
+## Privacy & App Store Compliance
+
+### Privacy Features
+- **No data collection**: No analytics, crash reporting, or user tracking
+- **No server storage**: Images processed via API are not stored
+- **EXIF removal**: All metadata stripped from saved images
+- **No ads or IAP**: Completely free app
+
+### App Store Submission
+- Submission materials in `app_store/` directory
+- Conservative app description to avoid rejection
+- Clear privacy policy explaining data handling
+
+## Error Handling
+
+The app uses `ErrorHandler` service for consistent error messages:
+- Network errors: Retry option provided
+- Large images: Automatic compression
+- API failures: User-friendly messages
+- Permission denied: Clear instructions
+
+## Development Tips
+
+### Image Processing Flow
+1. User selects image from gallery
+2. Image loaded and displayed with initial strength (5)
+3. User adjusts strength slider
+4. On save: compress → enhance via API → remove EXIF → save to library
+
+### API Rate Limits
+- OpenAI Image Edit API: $0.020 per image (1024×1024)
+- Implement retry logic for transient failures
+- Monitor API usage to control costs
+
+### Common Issues
+- **Permission errors**: Ensure Info.plist descriptions are set
+- **API key not found**: Check .env file and environment variables
+- **Build failures**: Run `flutter clean` then `flutter pub get`
+- **CocoaPods issues**: Delete `Podfile.lock` and run `pod install`
+
+# important-instruction-reminders
+Do what has been asked; nothing more, nothing less.
+NEVER create files unless they're absolutely necessary for achieving your goal.
+ALWAYS prefer editing an existing file to creating a new one.
+NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.

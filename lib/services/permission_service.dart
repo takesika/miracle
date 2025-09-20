@@ -2,24 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class PermissionService {
-  static Future<bool> requestCameraPermission() async {
-    final status = await Permission.camera.status;
-    
-    if (status.isGranted) {
-      return true;
-    }
-    
-    if (status.isDenied) {
-      final result = await Permission.camera.request();
-      return result.isGranted;
-    }
-    
-    if (status.isPermanentlyDenied) {
-      return false;
-    }
-    
-    return false;
-  }
 
   static Future<bool> requestPhotoPermission() async {
     final status = await Permission.photos.status;
@@ -40,20 +22,12 @@ class PermissionService {
     return false;
   }
 
-  static Future<bool> isCameraPermissionGranted() async {
-    final status = await Permission.camera.status;
-    return status.isGranted;
-  }
 
   static Future<bool> isPhotoPermissionGranted() async {
     final status = await Permission.photos.status;
     return status.isGranted;
   }
 
-  static Future<bool> isCameraPermissionPermanentlyDenied() async {
-    final status = await Permission.camera.status;
-    return status.isPermanentlyDenied;
-  }
 
   static Future<bool> isPhotoPermissionPermanentlyDenied() async {
     final status = await Permission.photos.status;
@@ -94,14 +68,6 @@ class PermissionService {
     );
   }
 
-  static void showCameraPermissionDialog(BuildContext context) {
-    showPermissionDialog(
-      context,
-      'カメラ権限が必要です',
-      '写真を撮影するためにカメラへのアクセスが必要です。設定でカメラを許可してください。',
-      () => openAppSettings(),
-    );
-  }
 
   static void showPhotoPermissionDialog(BuildContext context) {
     showPermissionDialog(
