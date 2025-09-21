@@ -34,8 +34,8 @@ class PermissionService {
     return status.isPermanentlyDenied;
   }
 
-  static Future<void> openAppSettings() async {
-    await openAppSettings();
+  static Future<bool> openSettings() async {
+    return await openAppSettings();
   }
 
   static void showPermissionDialog(
@@ -74,7 +74,7 @@ class PermissionService {
       context,
       'フォトライブラリ権限が必要です',
       '写真を選択・保存するためにフォトライブラリへのアクセスが必要です。設定で写真を許可してください。',
-      () => openAppSettings(),
+      () => openSettings(),
     );
   }
 }

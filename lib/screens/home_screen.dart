@@ -81,7 +81,7 @@ class HomeScreen extends StatelessWidget {
                             style: TextStyle(fontSize: 16),
                           ),
                           Text(
-                            '${appState.currentStrength}',
+                            '${appState.currentStrength > 5 ? 5 : appState.currentStrength}',
                             style: const TextStyle(
                               fontSize: 24,
                               fontWeight: FontWeight.bold,

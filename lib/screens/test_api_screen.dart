@@ -21,10 +21,10 @@ class _TestAPIScreenState extends State<TestAPIScreen> {
   @override
   void initState() {
     super.initState();
-    // Initialize with API key from environment or hardcoded for testing
+    // Initialize with API key from environment
     final apiKey = const String.fromEnvironment('OPENAI_API_KEY').isNotEmpty
         ? const String.fromEnvironment('OPENAI_API_KEY')
-        : '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';
+        : 'your_api_key_here';
     AIEnhancementServiceDio.initialize(apiKey);
   }
 

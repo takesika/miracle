@@ -44,6 +44,17 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
   // 自動処理を削除し、手動実行に変更
 
   Future<void> _processImage() async {
+    final appState = context.read<AppState>();
+    
+    // 使用制限チェック
+    final canUse = await appState.checkUsageLimit();
+    if (!canUse) {
+      setState(() {
+        _error = appState.getUsageLimitErrorMessage();
+      });
+      return;
+    }
+    
     final strengthLevel = _currentStrength.round();
     debugPrint('画像処理開始 - 魅力レベル: $strengthLevel');
     debugPrint('加工対象: 元画像 (${widget.imageFile.path})');
@@ -61,6 +72,8 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
       );
       
       if (result != null) {
+        // 使用回数を増やす
+        await appState.incrementUsage();
         debugPrint('AI処理完了 - 新しい画像: ${result.path}');
         setState(() {
           _processedImage = result;
@@ -101,15 +114,17 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
         // Update strength preference
         await context.read<AppState>().updateStrength(_currentStrength.round());
         
-        // Show success message and go back to home
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('写真を保存しました'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        
-        Navigator.of(context).popUntil((route) => route.isFirst);
+        if (mounted) {
+          // Show success message and go back to home
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('写真を保存しました'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          
+          Navigator.of(context).popUntil((route) => route.isFirst);
+        }
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -200,23 +215,42 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
               ),
             ),
             const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                ElevatedButton(
-                  onPressed: _processImage,
-                  child: const Text('再試行'),
-                ),
-                OutlinedButton(
-                  onPressed: () {
-                    setState(() {
-                      _processedImage = widget.imageFile;  // 元画像に戻す
-                      _error = null;
-                    });
-                  },
-                  child: const Text('元画像を表示'),
-                ),
-              ],
+            Consumer<AppState>(
+              builder: (context, appState, child) {
+                final isUsageLimitError = _error?.contains('使用制限') == true;
+                
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    if (!isUsageLimitError)
+                      ElevatedButton(
+                        onPressed: _processImage,
+                        child: const Text('再試行'),
+                      ),
+                    if (isUsageLimitError)
+                      ElevatedButton(
+                        onPressed: () async {
+                          await appState.refreshUsageLimitInfo();
+                          if (appState.canUseToday) {
+                            setState(() {
+                              _error = null;
+                            });
+                          }
+                        },
+                        child: const Text('更新'),
+                      ),
+                    OutlinedButton(
+                      onPressed: () {
+                        setState(() {
+                          _processedImage = widget.imageFile;  // 元画像に戻す
+                          _error = null;
+                        });
+                      },
+                      child: const Text('元画像を表示'),
+                    ),
+                  ],
+                );
+              },
             ),
           ],
         ),
@@ -350,8 +384,8 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
                 child: Slider(
                   value: _currentStrength,
                   min: 1,
-                  max: 10,
-                  divisions: 9,
+                  max: 5,
+                  divisions: 4,
                   onChanged: (_isProcessing || _isSaving)
                       ? null
                       : (value) {
@@ -361,7 +395,7 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
                         },
                 ),
               ),
-              const Text('10'),
+              const Text('5'),
             ],
           ),
           const SizedBox(height: 8),
@@ -369,42 +403,110 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '原状維持',
+                '少し良くなる',
                 style: TextStyle(fontSize: 12, color: Colors.grey),
               ),
               Text(
-                '最大補正',
+                '奇跡の一枚',
                 style: TextStyle(fontSize: 12, color: Colors.grey),
               ),
             ],
           ),
-          const SizedBox(height: 20),
-          // AI処理実行ボタンを追加
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: (_isProcessing || _isSaving) ? null : _processImage,
-              icon: _isProcessing 
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+          const SizedBox(height: 12),
+          // 使用制限情報を表示
+          Consumer<AppState>(
+            builder: (context, appState, child) {
+              if (appState.isLoadingUsageInfo) {
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
                       ),
-                    )
-                  : const Icon(Icons.auto_awesome),
-              label: Text(_isProcessing ? '処理中...' : 'AI加工を実行'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                textStyle: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
+                      SizedBox(width: 8),
+                      Text('使用制限情報を読み込み中...', style: TextStyle(fontSize: 12)),
+                    ],
+                  ),
+                );
+              }
+              
+              final remainingCount = appState.remainingUsage;
+              final dailyLimit = appState.dailyLimit;
+              final canUse = appState.canUseToday;
+              
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                margin: const EdgeInsets.only(bottom: 8),
+                decoration: BoxDecoration(
+                  color: canUse ? Colors.green[50] : Colors.red[50],
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: canUse ? Colors.green[300]! : Colors.red[300]!,
+                  ),
                 ),
-              ),
-            ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      canUse ? Icons.check_circle : Icons.warning,
+                      size: 16,
+                      color: canUse ? Colors.green[700] : Colors.red[700],
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      '本日の残り使用回数: $remainingCount/$dailyLimit',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: canUse ? Colors.green[700] : Colors.red[700],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+          // AI処理実行ボタンを追加
+          Consumer<AppState>(
+            builder: (context, appState, child) {
+              final canUse = appState.canUseToday;
+              return SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: (_isProcessing || _isSaving || !canUse) ? null : _processImage,
+                  icon: _isProcessing 
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : const Icon(Icons.auto_awesome),
+                  label: Text(
+                    _isProcessing 
+                        ? '処理中...' 
+                        : canUse 
+                            ? 'AI加工を実行' 
+                            : '使用制限に達しました'
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: canUse ? Colors.blue : Colors.grey,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    textStyle: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
         ],
       ),

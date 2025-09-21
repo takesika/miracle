@@ -1,14 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'screens/home_screen.dart';
 // import 'screens/test_api_screen.dart';
 import 'providers/app_state.dart';
 import 'services/ai_enhancement_service.dart';
 
-void main() {
-  // Initialize OpenAI API (環境変数またはここで設定)
-  const String openaiApiKey = String.fromEnvironment('OPENAI_API_KEY', defaultValue: 'your_api_key_here');
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   
+  // Load environment variables from .env file
+  await dotenv.load(fileName: ".env");
+  
+  final String openaiApiKey = dotenv.env['OPENAI_API_KEY'] ?? '';
+  
+  if (openaiApiKey.isEmpty) {
+    throw Exception('OPENAI_API_KEY not found in .env file');
+  }
+  
+  debugPrint('使用するAPIキー: ${openaiApiKey.substring(0, 20)}...');
   AIEnhancementService.initialize(openaiApiKey);
   
   runApp(const MiracleShotApp());

@@ -20,8 +20,7 @@ class PhotoSaveService {
     }
 
     if (permission.isPermanentlyDenied) {
-      debugPrint('Save permission permanently denied - opening settings');
-      await openAppSettings();
+      debugPrint('Save permission permanently denied');
       return false;
     }
 
@@ -35,27 +34,25 @@ class PhotoSaveService {
       // Read image bytes first
       final imageBytes = await imageFile.readAsBytes();
       
-      // Try to save using alternative method for simulator
-      if (kDebugMode) {
-        debugPrint('Trying to save to simulator photo library...');
-        try {
-          final result = await ImageGallerySaver.saveImage(
-            imageBytes,
-            name: 'miracle_shot_${DateTime.now().millisecondsSinceEpoch}',
-            isReturnImagePathOfIOS: true,
-          );
-          
-          debugPrint('Save result: $result');
-          if (result != null) {
-            _showToast('写真を保存しました');
-            return true;
-          }
-        } catch (e) {
-          debugPrint('Alternative save method failed: $e');
+      // Try direct save first
+      debugPrint('Trying to save to photo library...');
+      try {
+        final result = await ImageGallerySaver.saveImage(
+          imageBytes,
+          name: 'miracle_shot_${DateTime.now().millisecondsSinceEpoch}',
+          isReturnImagePathOfIOS: true,
+        );
+        
+        debugPrint('Save result: $result');
+        if (result != null) {
+          _showToast('写真を保存しました');
+          return true;
         }
+      } catch (e) {
+        debugPrint('Direct save failed, trying with permission: $e');
       }
       
-      // Request photo library permission
+      // If direct save fails, request permission
       final hasPermission = await requestPermission();
       if (!hasPermission) {
         debugPrint('Photo library permission denied');

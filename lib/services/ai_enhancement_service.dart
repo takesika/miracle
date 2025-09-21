@@ -20,6 +20,7 @@ class AIEnhancementService {
   static void initialize(String apiKey) {
     _apiKey = apiKey;
     _dio.options.headers['Authorization'] = 'Bearer $apiKey';
+    debugPrint('AIEnhancementService初期化完了 - APIキー: ${apiKey.isNotEmpty ? "${apiKey.substring(0, 20)}..." : "空"}');
   }
 
   static Future<File?> enhanceImage(File imageFile, int strength) async {
@@ -109,6 +110,13 @@ class AIEnhancementService {
       final prompt = _generatePrompt(strength);
       debugPrint('使用する魅力レベル: $strength');
       debugPrint('生成されたプロンプト: $prompt');
+      
+      // デバッグ用：APIキーが無効な場合は元画像をそのまま返す
+      if (_apiKey == null || _apiKey!.isEmpty || _apiKey == 'your_api_key_here') {
+        debugPrint('デバッグモード: APIキーが無効のため元画像を返します');
+        final imageBytes = await imageFile.readAsBytes();
+        return Uint8List.fromList(imageBytes);
+      }
       
       // Prepare form data with gpt-image-1 model
       final formData = FormData.fromMap({
@@ -249,31 +257,19 @@ class AIEnhancementService {
   }
   
   static String _generatePrompt(int strength) {
-    // 具体的で明確な画像編集指示
-    switch (strength) {
-      case 1:
-        return "この写真の人物の顔の特徴や表情は変更せず、画質のみを向上させてください。ノイズを軽減し、色調を少し整える程度の最小限の調整をお願いします。";
-      case 2:
-        return "この人の顔立ちや表情を変えずに、照明と色調を微調整してください。明るさとコントラストを自然に改善し、肌の色味を健康的に見せてください。";
-      case 3:
-        return "顔の形や特徴は保持したまま、肌の色味を自然に整え、目を少し明るく見せてください。骨格や輪郭は一切変更しないでください。";
-      case 4:
-        return "骨格や顔の輪郭は維持しながら、肌を滑らかにし、目の明度を上げて表情を生き生きと見せてください。顔の基本構造は変更しないでください。";
-      case 5:
-        return "本人の特徴的な顔立ちは保持したまま、肌の質感を改善し、目を輝かせ、全体的に健康的で生き生きとした印象にしてください。";
-      case 6:
-        return "顔の基本的な形状は保ちながら、肌を美しくし、目を印象的にし、全体的により良い印象になるよう調整してください。";
-      case 7:
-        return "本人らしい特徴を残しつつ、肌を滑らかにし、目を大きく明るくし、全体的により洗練された印象に仕上げてください。";
-      case 8:
-        return "本人の雰囲気と個性は保ちながら、肌を完璧に美しくし、目を大きく輝かせ、プロの写真のような仕上がりにしてください。";
-      case 9:
-        return "その人らしさを失わずに、肌・目・全体の印象を最高レベルで改善し、非常に印象的で美しい姿に仕上げてください。";
-      case 10:
-        return "本人の本質的な特徴を保持しながら、肌・目・表情のすべてを最高レベルで美しくし、圧倒的に美しい姿に仕上げてください。";
-      default:
-        return "この人の個性を保ちながら美しく仕上げてください。";
+    // レベル6-10は5として扱う（同一人物の域を出ないため）
+    int actualStrength = strength;
+    if (strength > 5) {
+      actualStrength = 5;
     }
+    
+    // システムプロンプト + ユーザープロンプト形式
+    const String systemPrompt = "この写真を奇跡の一枚に変えてください。 あくまで同一人物の域を出ないレベルで、今から魅力レベル１から５で指定するので変更してください。\n"
+        "１は少しよくなる程度、５は同一人物の域を出ないレベルで奇跡の一枚を生成してください。";
+    
+    final String userPrompt = "では$actualStrengthでお願いします。";
+    
+    return "$systemPrompt\n\n$userPrompt";
   }
 
   static Future<File> _saveTempFile(Uint8List bytes, String filename) async {

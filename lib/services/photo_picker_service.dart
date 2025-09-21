@@ -17,8 +17,7 @@ class PhotoPickerService {
     }
 
     if (permission.isPermanentlyDenied) {
-      debugPrint('Photo permission permanently denied - opening settings');
-      await openAppSettings();
+      debugPrint('Photo permission permanently denied');
       return false;
     }
 
@@ -27,7 +26,6 @@ class PhotoPickerService {
     
     if (result.isPermanentlyDenied) {
       debugPrint('Photo permission permanently denied after request');
-      await openAppSettings();
       return false;
     }
     
@@ -36,17 +34,8 @@ class PhotoPickerService {
 
   static Future<File?> pickImage() async {
     try {
-      // Skip permission check completely on simulator
-      if (kDebugMode) {
-        debugPrint('Simulator mode - skipping permission check');
-      } else {
-        // Only check permissions on real device
-        final hasPermission = await _requestPhotoPermission();
-        if (!hasPermission) {
-          debugPrint('Photo library permission denied');
-          return null;
-        }
-      }
+      // Skip permission check - let system handle it
+      debugPrint('Skipping permission check - system will handle');
 
       // Pick image from gallery
       final XFile? pickedFile = await _picker.pickImage(
